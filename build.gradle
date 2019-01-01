@@ -124,6 +124,9 @@ task pack {
     Path modMetaFile = root.getPath("/mcmod.info")
     Files.write(modMetaFile, modMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
 
+    Path assetsRoot = root.getPath("/pack.mcmeta")
+    Files.write(assetsRoot, packMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
     Path assets = Paths.get("assets")
     if (Files.exists(assets)) {
         Files.walkFileTree(assets, Collections.emptySet(), Integer.MAX_VALUE, new FileVisitor<Path>() {
