@@ -1,0 +1,133 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.ow2.asm:asm:7.0"
+        classpath "org.ow2.asm:asm-tree:7.0"
+    }
+}
+
+import java.nio.*
+import java.nio.channels.*
+import java.nio.file.*
+import java.nio.charset.*
+
+import org.objectweb.asm.ClassWriter
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.ClassNode
+
+if (!(mod_id ==~ /[a-z0-9_\\-]{1,64}/)) {
+    throw new IllegalArgumentException("mod_id must contain at least one, and at most sixty-four (64) of following: lower-case Latin letters, digits, hyphen and underscore.")
+}
+
+def modEntryPoint = {
+    def mainClass = new ClassNode(Opcodes.ASM7)
+    mainClass.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL, "_Generated", null, "java/lang/Object", null);
+    def modAnno = mainClass.visitAnnotation("Lnet/minecraftforge/fml/common/Mod;", true)
+    modAnno.visit("modid", mod_id)
+    modAnno.visit("name", mod_id)
+    modAnno.visit("version", mod_version)
+    modAnno.visit("useMetadata", Boolean.TRUE)
+    modAnno.visit("acceptedMinecraftVersions", "[1.12.2]")
+    modAnno.visitEnd()
+    // TODO: <clinit>?
+    def constructor = mainClass.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null)
+    constructor.visitVarInsn(Opcodes.ALOAD, 0)
+    constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false)
+    constructor.visitInsn(Opcodes.RETURN)
+    constructor.visitEnd()
+    mainClass.visitEnd()
+    def dumper = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS)
+    mainClass.accept(dumper)
+    dumper.toByteArray()
+}
+
+def modMeta = """[
+  {
+    "modid": "${mod_id}",
+    "name": "${mod_name}",
+    "description": "${mod_description.replace("\n", "\\n")}",
+    "version": "${mod_version}",
+    "authorList": [],
+    "credits": "",
+    "url": "",
+    "logoFile": ""
+  }
+]
+"""
+
+def packMeta = """{
+  "pack": {
+    "pack_format": 3,
+    "description": "Assets used by ${mod_name}"
+  }
+}
+"""
+
+def annotationCache = """{
+  "_Generated": {
+    "name": "_Generated",
+    "annotations": [
+      {
+        "type": "CLASS",
+        "name": "Lnet/mincraftforge/fml/common/Mod;",
+        "target": "_Generated",
+        "values": {
+          "acceptedMinecraftVersions": {
+            "value": "[1.12.2]"
+          },
+          "modid": {
+            "value": "${mod_id}"
+          },
+          "name": {
+            "value": "${mod_id}"
+          },
+          "useMetadata": {
+            "type": "BOOL",
+            "value": "true"
+          },
+          "version": {
+            "value": "${mod_version}"
+          }
+        }
+      }
+    ]
+  }
+}
+"""
+
+def classVerCache = """{
+  "_Generated": 52
+}
+"""
+
+def manifest = """Manifest-Version: 1.0
+Maven-Artifact: ${mod_group}:${mod_file_name}:${mod_version}
+Timestamp: ${System.currentTimeMillis()}
+"""
+
+task thonk {
+    Path target = Paths.get("${mod_file_name}-${mod_version}.jar")
+    Files.deleteIfExists(target)
+    FileSystem root = FileSystems.newFileSystem(new URI("jar:${target.toUri().toString()}"), [ create: "true" ])
+
+    Path mainClass = root.getPath("/_Generated.class")
+    Files.write(mainClass, modEntryPoint(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Path modMetaFile = root.getPath("/mcmod.info")
+    Files.write(modMetaFile, modMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Files.createDirectory(root.getPath("/META-INF"))
+
+    Path annoCacheFile = root.getPath("/META-INF/fml_cache_annotation.json")
+    Files.write(annoCacheFile, annotationCache.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+    
+    Path classVerCacheFile = root.getPath("/META-INF/fml_cache_class_versions.json")
+    Files.write(classVerCacheFile, classVerCache.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Path manifestFile = root.getPath("/META-INF/MANIFEST.MF")
+    Files.write(manifestFile, manifest.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    root.close()
+}

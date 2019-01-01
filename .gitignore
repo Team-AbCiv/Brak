@@ -1,0 +1,5 @@
+.gradle
+*.jar
+
+# You can hide your stuff here
+private
