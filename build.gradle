@@ -12,9 +12,12 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.FileSystem
 import java.nio.file.FileSystems
+import java.nio.file.FileVisitResult
+import java.nio.file.FileVisitor
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.BasicFileAttributes
 
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
@@ -120,6 +123,37 @@ task pack {
 
     Path modMetaFile = root.getPath("/mcmod.info")
     Files.write(modMetaFile, modMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Path assets = Paths.get("assets")
+    if (Files.exists(assets)) {
+        Files.walkFileTree(assets, Collections.emptySet(), Integer.MAX_VALUE, new FileVisitor<Path>() {
+            FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                if (Files.isHidden(dir)) {
+                    return FileVisitResult.SKIP_SUBTREE
+                } else {
+                    Files.createDirectories(root.getPath(dir.toString()))
+                    return FileVisitResult.CONTINUE
+                }
+            }
+            FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                Files.copy(file, root.getPath(file.toString()))
+                return FileVisitResult.CONTINUE
+            }
+            FileVisitResult visitFileFailed(Path file, IOException e) {
+                if (e) {
+                    println "Failed on ${file}"
+                    println exc.localizedMessage
+                }
+                return FileVisitResult.CONTINUE
+            }
+            FileVisitResult postVisitDirectory(Path dir, IOException e) {
+                if (e) {
+                    println exc.localizedMessage
+                }
+                return FileVisitResult.CONTINUE
+            }
+        })
+    }
 
     Files.createDirectory(root.getPath("/META-INF"))
 
