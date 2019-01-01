@@ -107,7 +107,7 @@ Maven-Artifact: ${mod_group}:${mod_file_name}:${mod_version}
 Timestamp: ${System.currentTimeMillis()}
 """
 
-task thonk {
+task pack {
     Path target = Paths.get("${mod_file_name}-${mod_version}.jar")
     Files.deleteIfExists(target)
     FileSystem root = FileSystems.newFileSystem(new URI("jar:${target.toUri().toString()}"), [ create: "true" ])
