@@ -8,10 +8,13 @@ buildscript {
     }
 }
 
-import java.nio.*
-import java.nio.channels.*
-import java.nio.file.*
-import java.nio.charset.*
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.FileSystem
+import java.nio.file.FileSystems
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
