@@ -123,33 +123,19 @@ Maven-Artifact: ${mod_group}:${mod_file_name}:${mod_version}
 Timestamp: ${System.currentTimeMillis()}
 """
 
-task pack-forge {
-    Path target = Paths.get("${mod_file_name}-${mod_version}.jar")
-    Files.deleteIfExists(target)
-    FileSystem root = FileSystems.newFileSystem(new URI("jar:${target.toUri().toString()}"), [ create: "true" ])
-
-    Path mainClass = root.getPath("/_Generated.class")
-    Files.write(mainClass, modEntryPoint(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
-
-    Path modMetaFile = root.getPath("/mcmod.info")
-    Files.write(modMetaFile, forgeModMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
-
-    Path assetsRoot = root.getPath("/pack.mcmeta")
-    Files.write(assetsRoot, packMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
-
-    Path assets = Paths.get("assets")
-    if (Files.exists(assets)) {
-        Files.walkFileTree(assets, Collections.emptySet(), Integer.MAX_VALUE, new FileVisitor<Path>() {
+def recursiveCopy(Path from, Path to) {
+    if (Files.exists(from)) {
+        Files.walkFileTree(from, Collections.emptySet(), Integer.MAX_VALUE, new FileVisitor<Path>() {
             FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                 if (Files.isHidden(dir)) {
                     return FileVisitResult.SKIP_SUBTREE
                 } else {
-                    Files.createDirectories(root.getPath(dir.toString()))
+                    Files.createDirectories(to.resolve(dir.toString()))
                     return FileVisitResult.CONTINUE
                 }
             }
             FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                Files.copy(file, root.getPath(file.toString()))
+                Files.copy(file, to.resolve(file.toString()))
                 return FileVisitResult.CONTINUE
             }
             FileVisitResult visitFileFailed(Path file, IOException e) {
@@ -167,7 +153,24 @@ task pack-forge {
             }
         })
     }
+}
 
+task pack_forge {
+    Path target = Paths.get("${mod_file_name}-${mod_version}.jar")
+    Files.deleteIfExists(target)
+    FileSystem root = FileSystems.newFileSystem(new URI("jar:${target.toUri().toString()}"), [ create: "true" ])
+
+    Path mainClass = root.getPath("/_Generated.class")
+    Files.write(mainClass, modEntryPoint(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Path modMetaFile = root.getPath("/mcmod.info")
+    Files.write(modMetaFile, forgeModMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    Path assetsRoot = root.getPath("/pack.mcmeta")
+    Files.write(assetsRoot, packMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
+
+    recursiveCopy(Paths.get("assets"), root.getPath("/"))
+    
     Files.createDirectory(root.getPath("/META-INF"))
 
     Path annoCacheFile = root.getPath("/META-INF/fml_cache_annotation.json")
@@ -182,7 +185,7 @@ task pack-forge {
     root.close()
 }
 
-task pack-fabric {
+task pack_fabric {
     Path target = Paths.get("${mod_file_name}-fabric-${mod_version}.jar")
     Files.deleteIfExists(target)
     FileSystem root = FileSystems.newFileSystem(new URI("jar:${target.toUri().toString()}"), [ create: "true" ])
@@ -190,7 +193,10 @@ task pack-fabric {
     Path fabricModJson = root.getPath("/fabric.mod.json")
     Files.write(fabricModJson, fabricModMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
 
-    // TODO Why should we duplicate a large chunk of code?
+    recursiveCopy(Paths.get("assets"), root.getPath("/"))
+
+    Path assetsRoot = root.getPath("/pack.mcmeta")
+    Files.write(assetsRoot, packMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
 
     root.close()
 }
