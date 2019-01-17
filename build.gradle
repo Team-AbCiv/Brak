@@ -194,6 +194,7 @@ task pack_fabric {
     Files.write(fabricModJson, fabricModMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE)
 
     recursiveCopy(Paths.get("assets"), root.getPath("/"))
+    recursiveCopy(Paths.get("data"), root.getPath("/")) // TODO It looks like both resource pack and data pack uses `pack.mcmeta` - what's the deal then?
 
     Path assetsRoot = root.getPath("/pack.mcmeta")
     Files.write(assetsRoot, packMeta.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
