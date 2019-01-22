@@ -27,7 +27,7 @@ if (!(mod_id ==~ /[a-z0-9_\\-]{1,64}/)) {
     throw new IllegalArgumentException("mod_id must contain at least one, and at most sixty-four (64) of following: lower-case Latin letters, digits, hyphen and underscore.")
 }
 
-def packVersions = [ 1.10.2: "2", 1.11.2: "3", 1.12.2: "3", 1.13.2: "4", 1.14: "4" ]
+def packVersions = [ "1.10.2": "2", "1.11.2": "3", "1.12.2": "3", "1.13.2": "4", "1.14": "4" ]
 
 if (!packVersions.containsKey(target_minecraft)) {
     throw new IllegalArgumentException("${target_minecraft} is not a supported Minecraft version")
