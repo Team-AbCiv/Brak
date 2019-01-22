@@ -41,7 +41,7 @@ def modEntryPoint = {
     modAnno.visit("name", mod_id)
     modAnno.visit("version", mod_version)
     modAnno.visit("useMetadata", Boolean.TRUE)
-    modAnno.visit("acceptedMinecraftVersions", "[${target_minecraft}]")
+    modAnno.visit("acceptedMinecraftVersions", "[${target_minecraft}]".toString())
     modAnno.visitEnd()
     // TODO: <clinit>?
     def constructor = mainClass.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null)
