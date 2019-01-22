@@ -147,13 +147,13 @@ def recursiveCopy(Path from, Path to) {
             FileVisitResult visitFileFailed(Path file, IOException e) {
                 if (e) {
                     println "Failed on ${file}"
-                    println exc.localizedMessage
+                    println e.localizedMessage
                 }
                 return FileVisitResult.CONTINUE
             }
             FileVisitResult postVisitDirectory(Path dir, IOException e) {
                 if (e) {
-                    println exc.localizedMessage
+                    println e.localizedMessage
                 }
                 return FileVisitResult.CONTINUE
             }
